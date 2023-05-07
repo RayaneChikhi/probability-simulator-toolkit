@@ -11,6 +11,8 @@ You may use them to illustrate multiple probability theory results including but
   - Law of the middle for urns
   - Random graphs (WIP)
   - The Salem-Zygmund theorem (WIP)
+  - Number of fixed points
+  - Bernstein polynomials approach to Weierstrass' theorem
   - Law duels (WIP)
 etc...
 
