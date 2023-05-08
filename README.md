@@ -17,7 +17,7 @@ You may use them to illustrate multiple probability theory results including but
 etc...
 
 The goal of this project is to build intuition on probability by truly understanding how each probability law and their parameters function all whilst discovering theorems and probability problems. 
-Being able to apply these problems and theorems to different laws of probability is truly interesting as most theorems reside in their universality.
+Being able to apply these problems and theorems to different laws of probability is truly interesting as most theorems' properties reside in their universality in regards to the probability distribution used.
 
 In the future, I plan on adding:
   - Finish adding the possibility to create your own law of probability
