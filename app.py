@@ -415,16 +415,30 @@ def commonBirthday(L,i,seen):
             return True
     return False
 
-def birthday(n):
-    classroom = [i for i in range(1,n+1)]
-    state, birthdays, weights = uniform(365,n)
-    numberOfCommonBirthdays=0
-    counts = dict(Counter(birthdays))
-    duplicates = {key:value for key, value in counts.items() if value > 1}
-    
-    for key in duplicates:
-        numberOfCommonBirthdays+=duplicates[key]
-    return numberOfCommonBirthdays
+def birthday(n,N=1000):
+    results=[]
+    for i in range(1,n+1):
+        to_average=[]
+        for j in range(N):
+            state, birthdays, weights = uniform(365,i)
+            numberOfCommonBirthdays=0
+            counts = dict(Counter(birthdays))
+            duplicates = {key:value for key, value in counts.items() if value > 1}
+            for key in duplicates:
+                numberOfCommonBirthdays+=duplicates[key]
+            to_average.append(numberOfCommonBirthdays)
+        results.append(avg(to_average))
+    fig, ax = plt.subplots(1,2)
+    ax[0].title.set_text('Number of common birthdays for each classroom')
+    ax[0].plot([i for i in range(1,n+1)], results)
+    ax[0].set_xlabel('Classroom size')
+    ax[0].set_ylabel('Number of common birthdays')
+    maxValue=max(results)
+    ax[1].title.set_text('Probability distribution in theory')
+    ax[1].set_xlabel('Classroom size')
+    ax[1].set_ylabel('Probability of two people sharing the same birth date')
+    ax[1].bar([i for i in range(1,n+1)],[(1 - (factorial(365) / (factorial(365-i) * 365**i))) for i in range(1,n+1)])
+    plt.show()
 
 
 #################################################################
@@ -692,5 +706,107 @@ def castle_duel(law1,parameter1, law2, parameter2, rounds=10,castles=10,soldiers
         print("Tie")
     plt.show()
 
-castle_duel(binomial,(10,0.8), binomial, (10, 0.3))
 
+###################### Brownian tree (WIP)
+
+import pygame, sys, os
+from pygame.locals import *
+from random import randint
+pygame.init()
+
+MAXSPEED = 15
+SIZE = 3
+COLOR = (45, 90, 45)
+WINDOWSIZE = 400
+TIMETICK = 1
+MAXPART = 50
+
+freeParticles = pygame.sprite.Group()
+tree = pygame.sprite.Group()
+
+window = pygame.display.set_mode((WINDOWSIZE, WINDOWSIZE))
+pygame.display.set_caption("Brownian Tree")
+
+screen = pygame.display.get_surface()
+
+
+class Particle(pygame.sprite.Sprite):
+    def __init__(self, vector, location, surface):
+        pygame.sprite.Sprite.__init__(self)
+        self.vector = vector
+        self.surface = surface
+        self.accelerate(vector)
+        self.add(freeParticles)
+        self.rect = pygame.Rect(location[0], location[1], SIZE, SIZE)
+        self.surface.fill(COLOR, self.rect)
+
+    def onEdge(self):
+        if self.rect.left <= 0:
+            self.vector = (abs(self.vector[0]), self.vector[1])
+        elif self.rect.top <= 0:
+            self.vector = (self.vector[0], abs(self.vector[1]))
+        elif self.rect.right >= WINDOWSIZE:
+            self.vector = (-abs(self.vector[0]), self.vector[1])
+        elif self.rect.bottom >= WINDOWSIZE:
+            self.vector = (self.vector[0], -abs(self.vector[1]))
+
+    def update(self):
+        if freeParticles in self.groups():
+            self.surface.fill((0,0,0), self.rect)
+            self.remove(freeParticles)
+            if pygame.sprite.spritecollideany(self, freeParticles):
+                self.accelerate((randint(-MAXSPEED, MAXSPEED), 
+                                 randint(-MAXSPEED, MAXSPEED)))
+                self.add(freeParticles)
+            elif pygame.sprite.spritecollideany(self, tree):
+                self.stop()
+            else:
+                self.add(freeParticles)
+                
+            self.onEdge()
+
+            if (self.vector == (0,0)) and tree not in self.groups():
+                self.accelerate((randint(-MAXSPEED, MAXSPEED), 
+                                 randint(-MAXSPEED, MAXSPEED)))
+            self.rect.move_ip(self.vector[0], self.vector[1])
+        self.surface.fill(COLOR, self.rect)
+
+    def stop(self):
+        self.vector = (0,0)
+        self.remove(freeParticles)
+        self.add(tree)
+
+    def accelerate(self, vector):
+        self.vector = vector
+
+NEW = USEREVENT + 1
+TICK = USEREVENT + 2
+
+pygame.time.set_timer(NEW, 50)
+pygame.time.set_timer(TICK, TIMETICK)
+
+
+def input(events):
+    for event in events:
+        if event.type == QUIT:
+            sys.exit(0)
+        elif event.type == NEW and (len(freeParticles) < MAXPART):
+            Particle((randint(-MAXSPEED,MAXSPEED),
+                      randint(-MAXSPEED,MAXSPEED)),
+                     (randint(0, WINDOWSIZE), randint(0, WINDOWSIZE)), 
+                     screen)
+        elif event.type == TICK:
+            freeParticles.update()
+
+
+half = WINDOWSIZE/2
+tenth = WINDOWSIZE/10
+
+root = Particle((0,0),
+                (randint(half-tenth, half+tenth), 
+                 randint(half-tenth, half+tenth)), screen)
+root.stop()
+
+while True:
+    input(pygame.event.get())
+    pygame.display.flip()
