@@ -24,7 +24,7 @@ In the future, I plan on adding:
   - Finish adding the possibility to create your own law of probability
   - More illustrations of probability problems.
   - More illustrations of probability theorems people are usually unfamiliar with.
-  - Illustrations of processes, brownian motion, stochastic calculus, measure theory etc..
+  - Illustrations of processes, brownian motion, stochastic calculus etc..
   - Illustration of combinatorics asymptotics results
   - More on random graphs
   - Illustrations of brownian trees formed using different laws of probability
