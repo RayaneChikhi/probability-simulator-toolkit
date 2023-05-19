@@ -15,6 +15,7 @@ You may use them to illustrate multiple probability theory results including but
   - Bernstein polynomials approach to Weierstrass' theorem
   - Law duels (WIP)
   - Probability of a monic polynomial with coefficients being i.i.d variables having a rational root
+
 etc...
 
 The goal of this project is to build intuition on probability by truly understanding how each probability law and their parameters function all whilst discovering theorems and probability problems. 
