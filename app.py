@@ -12,6 +12,8 @@ import networkx as nx
 import scipy.special as spp
 from scipy.integrate import quad
 import scipy
+from scipy.spatial import ConvexHull
+from matplotlib.path import Path
 
 #User made law:
 
@@ -415,30 +417,16 @@ def commonBirthday(L,i,seen):
             return True
     return False
 
-def birthday(n,N=1000):
-    results=[]
-    for i in range(1,n+1):
-        to_average=[]
-        for j in range(N):
-            state, birthdays, weights = uniform(365,i)
-            numberOfCommonBirthdays=0
-            counts = dict(Counter(birthdays))
-            duplicates = {key:value for key, value in counts.items() if value > 1}
-            for key in duplicates:
-                numberOfCommonBirthdays+=duplicates[key]
-            to_average.append(numberOfCommonBirthdays)
-        results.append(avg(to_average))
-    fig, ax = plt.subplots(1,2)
-    ax[0].title.set_text('Number of common birthdays for each classroom')
-    ax[0].plot([i for i in range(1,n+1)], results)
-    ax[0].set_xlabel('Classroom size')
-    ax[0].set_ylabel('Number of common birthdays')
-    maxValue=max(results)
-    ax[1].title.set_text('Probability distribution in theory')
-    ax[1].set_xlabel('Classroom size')
-    ax[1].set_ylabel('Probability of two people sharing the same birth date')
-    ax[1].bar([i for i in range(1,n+1)],[(1 - (factorial(365) / (factorial(365-i) * 365**i))) for i in range(1,n+1)])
-    plt.show()
+def birthday(n):
+    classroom = [i for i in range(1,n+1)]
+    state, birthdays, weights = uniform(365,n)
+    numberOfCommonBirthdays=0
+    counts = dict(Counter(birthdays))
+    duplicates = {key:value for key, value in counts.items() if value > 1}
+    
+    for key in duplicates:
+        numberOfCommonBirthdays+=duplicates[key]
+    return numberOfCommonBirthdays
 
 
 #################################################################
@@ -614,7 +602,6 @@ def polya_urn(n,m,tries, runs=1000):
     ax[0].legend(['Proportion of red balls', 'Mean of means of each proportions', 'Proportion of blue balls'])
     plt.show()
 
-#Notice how the remaining ball in the urn is most likely to be the ball with the number n. This is known as the middle law. (too lazy to explain here, good luck finding it online...)
 def middle_law(n,N):
     results=[]
     for i in range(N):
@@ -707,106 +694,117 @@ def castle_duel(law1,parameter1, law2, parameter2, rounds=10,castles=10,soldiers
     plt.show()
 
 
-###################### Brownian tree (WIP)
+################### Around the random convex hull problem 
+def newStack():
+    return []
 
-import pygame, sys, os
-from pygame.locals import *
-from random import randint
-pygame.init()
+def isEmpty(s):
+    return s==[]
 
-MAXSPEED = 15
-SIZE = 3
-COLOR = (45, 90, 45)
-WINDOWSIZE = 400
-TIMETICK = 1
-MAXPART = 50
+def push(i,s):
+    s.append(i)
 
-freeParticles = pygame.sprite.Group()
-tree = pygame.sprite.Group()
+def top(s):
+    return s[-1]
 
-window = pygame.display.set_mode((WINDOWSIZE, WINDOWSIZE))
-pygame.display.set_caption("Brownian Tree")
-
-screen = pygame.display.get_surface()
+def pop(s):
+    a = s[-1]
+    s.pop()
+    return a
 
 
-class Particle(pygame.sprite.Sprite):
-    def __init__(self, vector, location, surface):
-        pygame.sprite.Sprite.__init__(self)
-        self.vector = vector
-        self.surface = surface
-        self.accelerate(vector)
-        self.add(freeParticles)
-        self.rect = pygame.Rect(location[0], location[1], SIZE, SIZE)
-        self.surface.fill(COLOR, self.rect)
 
-    def onEdge(self):
-        if self.rect.left <= 0:
-            self.vector = (abs(self.vector[0]), self.vector[1])
-        elif self.rect.top <= 0:
-            self.vector = (self.vector[0], abs(self.vector[1]))
-        elif self.rect.right >= WINDOWSIZE:
-            self.vector = (-abs(self.vector[0]), self.vector[1])
-        elif self.rect.bottom >= WINDOWSIZE:
-            self.vector = (self.vector[0], -abs(self.vector[1]))
-
-    def update(self):
-        if freeParticles in self.groups():
-            self.surface.fill((0,0,0), self.rect)
-            self.remove(freeParticles)
-            if pygame.sprite.spritecollideany(self, freeParticles):
-                self.accelerate((randint(-MAXSPEED, MAXSPEED), 
-                                 randint(-MAXSPEED, MAXSPEED)))
-                self.add(freeParticles)
-            elif pygame.sprite.spritecollideany(self, tree):
-                self.stop()
-            else:
-                self.add(freeParticles)
-                
-            self.onEdge()
-
-            if (self.vector == (0,0)) and tree not in self.groups():
-                self.accelerate((randint(-MAXSPEED, MAXSPEED), 
-                                 randint(-MAXSPEED, MAXSPEED)))
-            self.rect.move_ip(self.vector[0], self.vector[1])
-        self.surface.fill(COLOR, self.rect)
-
-    def stop(self):
-        self.vector = (0,0)
-        self.remove(freeParticles)
-        self.add(tree)
-
-    def accelerate(self, vector):
-        self.vector = vector
-
-NEW = USEREVENT + 1
-TICK = USEREVENT + 2
-
-pygame.time.set_timer(NEW, 50)
-pygame.time.set_timer(TICK, TIMETICK)
+def sort_lists(A, B):
+    C = list(zip(A, B))
+    C.sort(key=lambda x: x[0])
+    A_sorted, B_sorted = zip(*C)
+    
+    return [list(A_sorted),list(B_sorted)]
 
 
-def input(events):
-    for event in events:
-        if event.type == QUIT:
-            sys.exit(0)
-        elif event.type == NEW and (len(freeParticles) < MAXPART):
-            Particle((randint(-MAXSPEED,MAXSPEED),
-                      randint(-MAXSPEED,MAXSPEED)),
-                     (randint(0, WINDOWSIZE), randint(0, WINDOWSIZE)), 
-                     screen)
-        elif event.type == TICK:
-            freeParticles.update()
+
+def plusBas(tab, n):
+    ans = 0
+    for i in range(1, n):
+        if tab[1][i] < tab[1][ans] or tab[1][i] == tab[1][ans] and tab[0][i] < tab[0][ans]:
+            ans = i
+    return ans
+
+def orient(tab, i, j, k):
+    a, b = tab[0][j] - tab[0][i], tab[0][k] - tab[0][i]
+    c, d = tab[1][j] - tab[1][i], tab[1][k] - tab[1][i]
+    det = a * d - b * c
+    if det > 0:
+        return 1
+    elif det < 0:
+        return -1
+    else:
+        return 0
 
 
-half = WINDOWSIZE/2
-tenth = WINDOWSIZE/10
+def majES(tab, es, i):
+    j = pop(es)
+    while not isEmpty(es):
+        k = top(es)
+        if orient(tab, i, j, k) > 0:
+            break
+        j = pop(es)
+    push(j, es)
+    push(i, es)
 
-root = Particle((0,0),
-                (randint(half-tenth, half+tenth), 
-                 randint(half-tenth, half+tenth)), screen)
-root.stop()
 
-while True:
-    input(pygame.event.get())
-    pygame.display.flip()
+def majEI(tab, ei, i):
+    j = pop(ei)
+    while not isEmpty(ei):
+        k = top(ei)
+        if orient(tab, i, j, k) < 0:
+            break
+        j = pop(ei)
+    push(j, ei)
+    push(i, ei)
+
+
+def convGraham(tab, n):
+    ei = newStack()
+    es = newStack()
+    tab=sort_lists(tab[0],tab[1])
+    push(0, ei)
+    push(0, es)
+    for i in range(1, n):
+        majES(tab, es, i)
+        majEI(tab, ei, i)
+    pop(es)
+    while not isEmpty(es):
+        push(pop(es), ei)
+    pop(ei)
+    return ei
+
+def isinhull(x,y,hull):
+    dhull=[[hull[0][i] for i in range(len(hull))], [hull[1][i] for i in range(len(hull))]]
+    dhull[0].append(x)
+    dhull[1].append(y)
+
+    return convGraham(hull, len(hull)) == convGraham(dhull, len(dhull))
+
+
+def random_hull(law, parameter, n=100,M=100):
+    results=[0 for i in range(3,n+1)]
+
+    for k in range(M):
+        for m in range(3,n+1):
+            points=[[],[]]
+            for i in range(m):
+                _,var,_ = law(parameter, 2)
+                points[0].append(cos(var[0]))
+                points[1].append(sin(var[1]))
+            ei = convGraham(points, len(points))
+            tab = [[points[0][i] for i in ei], [points[1][i] for i in ei]]
+            if isinhull(0,0,tab):
+                results[m-3]+=1
+            print(isinhull(0,0,tab))
+
+    
+    plt.plot([i for i in range(3,n+1)], results)
+    plt.show()
+
+
